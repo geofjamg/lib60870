@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
+#include <time.h>
 
 #include "cs104_slave.h"
 
@@ -226,6 +227,12 @@ connectionEventHandler(void* parameter, IMasterConnection con, CS104_PeerConnect
 int
 main(int argc, char** argv)
 {
+    const char* ip = argv[1];
+    int port = atoi(argv[2]);
+    int ca = atoi(argv[3]);
+    int address_count = atoi(argv[4]);
+    printf("Listening %s:%d\n", ip, port);
+
     /* Add Ctrl-C handler */
     signal(SIGINT, sigint_handler);
 
@@ -233,7 +240,8 @@ main(int argc, char** argv)
      * default message queue size */
     CS104_Slave slave = CS104_Slave_create(10, 10);
 
-    CS104_Slave_setLocalAddress(slave, "0.0.0.0");
+    CS104_Slave_setLocalAddress(slave, ip);
+    CS104_Slave_setLocalPort(slave, port);
 
     /* Set mode to a single redundancy group
      * NOTE: library has to be compiled with CONFIG_CS104_SUPPORT_SERVER_MODE_SINGLE_REDUNDANCY_GROUP enabled (=1)
@@ -282,13 +290,16 @@ main(int argc, char** argv)
 
     int16_t scaledValue = 0;
 
+    srand(time(NULL));
+
     while (running) {
 
-        Thread_sleep(1000);
+        Thread_sleep(20);
 
-        CS101_ASDU newAsdu = CS101_ASDU_create(alParams, false, CS101_COT_PERIODIC, 0, 1, false, false);
+        CS101_ASDU newAsdu = CS101_ASDU_create(alParams, false, CS101_COT_PERIODIC, 0, ca, false, false);
 
-        InformationObject io = (InformationObject) MeasuredValueScaled_create(NULL, 110, scaledValue, IEC60870_QUALITY_GOOD);
+        int oia = (rand() % address_count) + 1;
+        InformationObject io = (InformationObject) MeasuredValueScaled_create(NULL, oia, scaledValue, IEC60870_QUALITY_GOOD);
 
         scaledValue++;
 
